@@ -541,7 +541,7 @@ const TenantDetailPage = () => {
                     onChange={(e) =>
                       handleInputChange("active", parseInt(e.target.value))
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#008089] focus:border-[#008089]"
+                    className="w-full px-3 py-2 border border-gray-300 text-gray-400 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#008089] focus:border-[#008089]"
                   >
                     <option value={1}>Ativo</option>
                     <option value={3}>Inativo</option>
