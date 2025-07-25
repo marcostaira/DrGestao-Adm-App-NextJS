@@ -1,3 +1,4 @@
+// src/components/layout/Sidebar.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -12,23 +13,15 @@ import {
   Shield,
   ChevronDown,
   ChevronRight,
+  Building2,
+  MessageCircle,
+  Plus,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils/cn";
+import { MenuItem, SidebarProps } from "@/types/layout.types";
 
-interface SidebarProps {
-  isOpen: boolean;
-}
 
-interface MenuItem {
-  id: string;
-  title: string;
-  icon: React.ComponentType<{ className?: string }>;
-  href?: string;
-  permission?: string;
-  level?: number;
-  children?: MenuItem[];
-}
 
 const menuItems: MenuItem[] = [
   {
@@ -39,9 +32,31 @@ const menuItems: MenuItem[] = [
     level: 4, // Todos podem acessar
   },
   {
+    id: "tenants",
+    title: "Clientes",
+    icon: Building2,
+    level: 2, // Admin e acima
+    children: [
+      {
+        id: "tenants-list",
+        title: "Lista de Clientes",
+        icon: Building2,
+        href: "/tenants",
+        level: 2,
+      },
+      {
+        id: "tenants-new",
+        title: "Novo Cliente",
+        icon: Plus,
+        href: "/tenants/new",
+        level: 2,
+      },
+    ],
+  },
+  {
     id: "whatsApp",
     title: "WhatsApp",
-    icon: FileText,
+    icon: MessageCircle,
     level: 2,
     children: [
       {
@@ -136,9 +151,17 @@ export function Sidebar({ isOpen }: SidebarProps) {
     const hasChildren = item.children && item.children.length > 0;
     const isActive = pathname === item.href;
 
+    // Verificar se é um item pai ativo (algum filho está ativo)
+    const isParentActive =
+      hasChildren &&
+      item.children?.some(
+        (child) =>
+          pathname === child.href || pathname.startsWith(child.href + "/")
+      );
+
     const itemClasses = cn(
       "flex items-center text-left py-2 text-sm rounded-md transition-colors min-w-0",
-      isActive
+      isActive || isParentActive
         ? "bg-white/20 text-white font-medium"
         : "text-white/80 hover:bg-white/10 hover:text-white",
       // Estilos específicos para cada estado

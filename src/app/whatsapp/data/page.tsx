@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Tabs, Tab } from "@/components/ui/Tabs";
 import { useWhatsApp } from "@/hooks/useWhatsApp";
@@ -316,7 +316,7 @@ export default function WhatsAppDataPage() {
 
         {/* Info de atualização automática */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-blue-700"> 
+          <div className="flex items-center gap-2 text-blue-700">
             <RefreshCw className="h-4 w-4" />
             <p className="text-sm">
               Os dados são atualizados automaticamente a cada 5 segundos

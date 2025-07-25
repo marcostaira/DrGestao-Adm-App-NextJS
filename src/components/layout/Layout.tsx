@@ -5,10 +5,7 @@ import { Toolbar } from "./Toolbar";
 import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
-
-interface LayoutProps {
-  children: React.ReactNode;
-}
+import { LayoutProps } from "@/types/layout.types";
 
 export function Layout({ children }: LayoutProps) {
   const { isAuthenticated, isLoading } = useAuth();

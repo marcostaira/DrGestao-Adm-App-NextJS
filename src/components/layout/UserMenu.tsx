@@ -1,22 +1,18 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { User } from '@/types/auth.types';
-import { getLevelDescription } from '@/lib/auth/permissions';
-import { 
-  ChevronDown, 
-  User as UserIcon, 
-  Settings, 
-  Key, 
+import React, { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { getLevelDescription } from "@/lib/auth/permissions";
+import {
+  ChevronDown,
+  User as UserIcon,
+  Settings,
+  Key,
   LogOut,
-  Shield
-} from 'lucide-react';
-
-interface UserMenuProps {
-  user: User;
-}
+  Shield,
+} from "lucide-react";
+import { UserMenuProps } from "@/types/layout.types";
 
 export function UserMenu({ user }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,34 +28,34 @@ export function UserMenu({ user }: UserMenuProps) {
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   const handleLogout = async () => {
     await logout();
-    router.push('/login');
+    router.push("/login");
   };
 
   const handleEditProfile = () => {
     setIsOpen(false);
     // TODO: Implementar rota para editar perfil
-    console.log('Editar perfil');
+    console.log("Editar perfil");
   };
 
   const handleChangePassword = () => {
     setIsOpen(false);
     // TODO: Implementar rota para alterar senha
-    console.log('Alterar senha');
+    console.log("Alterar senha");
   };
 
   const getInitials = (name: string): string => {
     return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -78,7 +74,9 @@ export function UserMenu({ user }: UserMenuProps) {
         </div>
         <div className="hidden md:block text-left">
           <p className="text-sm font-medium text-gray-900">{user.name}</p>
-          <p className="text-xs text-gray-500">{getLevelDescription(user.level)}</p>
+          <p className="text-xs text-gray-500">
+            {getLevelDescription(user.level)}
+          </p>
         </div>
         <ChevronDown className="h-4 w-4 text-gray-500" />
       </button>
@@ -121,7 +119,7 @@ export function UserMenu({ user }: UserMenuProps) {
                 onClick={() => {
                   setIsOpen(false);
                   // TODO: Implementar configurações
-                  console.log('Configurações');
+                  console.log("Configurações");
                 }}
                 className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
               >

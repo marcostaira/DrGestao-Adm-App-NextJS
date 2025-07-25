@@ -5,11 +5,7 @@ import { Menu, User, Settings, LogOut, KeyRound } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-
-interface ToolbarProps {
-  onToggleSidebar: () => void;
-  sidebarOpen: boolean;
-}
+import { ToolbarProps } from '@/types/layout.types';
 
 export function Toolbar({ onToggleSidebar, sidebarOpen }: ToolbarProps) {
   const { user, logout } = useAuth();
