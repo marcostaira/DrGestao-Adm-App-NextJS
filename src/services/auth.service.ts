@@ -2,6 +2,13 @@ import { ApiService } from './api.service';
 import { AuthResponse, LoginCredentials, User } from '@/types/auth.types';
 import { AuthValidation } from '@/lib/validations/auth';
 import { levelToRole, getPermissionsByLevel } from '@/lib/auth/permissions';
+import { SimpleCookieHelper } from '@/lib/utils/cookie-helper';
+
+// Estender LoginCredentials para incluir opções de cookies
+export interface LoginWithOptionsCredentials extends LoginCredentials {
+  rememberDevice?: boolean;
+  rememberLogin?: boolean;
+}
 
 // Tipo da resposta da API baseado na estrutura do DB
 interface ApiUserResponse {
@@ -23,7 +30,7 @@ export class AuthService {
   /**
    * Realiza login com validação e sanitização
    */
-  static async login(credentials: LoginCredentials): Promise<{
+  static async login(credentials: LoginWithOptionsCredentials): Promise<{
     success: boolean;
     data?: AuthResponse;
     message?: string;
@@ -113,6 +120,15 @@ export class AuthService {
         // Salvar dados do usuário
         localStorage.setItem('user_data', JSON.stringify(user));
 
+        // Configurar cookies se solicitado
+        if (credentials.rememberDevice) {
+          SimpleCookieHelper.setDeviceTrust(user.id);
+        }
+
+        if (credentials.rememberLogin) {
+          SimpleCookieHelper.setPersistentLogin(authResponse.token);
+        }
+
         return {
           success: true,
           data: authResponse,
@@ -147,6 +163,11 @@ export class AuthService {
       // Limpar dados locais
       ApiService.removeAuthToken();
       localStorage.removeItem('user_data');
+      
+      // Limpar cookies de autenticação
+      SimpleCookieHelper.clearAuthCookies();
+      
+      console.log('🔄 Logout completo realizado');
     }
   }
 
@@ -251,24 +272,64 @@ export class AuthService {
   }
 
   /**
-   * Atualiza token (implementar quando tiver endpoint de refresh)
+   * Tentar login automático com cookie persistente
    */
-  static async refreshToken(): Promise<boolean> {
+  static async tryAutoLogin(): Promise<boolean> {
     try {
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (!refreshToken) return false;
+      const persistentToken = SimpleCookieHelper.getPersistentLogin();
+      
+      if (!persistentToken) {
+        return false;
+      }
 
-      const response = await ApiService.post<{ token: string }>('/auth/refresh', {
-        refreshToken
+      console.log('🍪 Tentando login automático com cookie...');
+
+      // Verificar se o token ainda é válido fazendo uma requisição
+      const response = await ApiService.post<ApiAuthResponse>('/auth/verify-token', {
+        token: persistentToken
       });
 
       if (response.success && response.data) {
-        ApiService.setAuthToken(response.data.token);
-        return true;
-      }
+        console.log('✅ Login automático realizado');
+        
+        // Processar dados do usuário
+        const activeValue = response.data.user.active;
+        const activeStatus = activeValue === undefined ? true : 
+                            (typeof activeValue === 'number' && activeValue === 1) || 
+                            (typeof activeValue === 'string' && activeValue === '1');
+        
+        if (activeStatus) {
+          const user: User = {
+            id: response.data.user.id,
+            name: response.data.user.name,
+            email: response.data.user.email,
+            login: response.data.user.login || response.data.user.email,
+            active: activeStatus,
+            level: response.data.user.level,
+            role: levelToRole(response.data.user.level),
+            permissions: getPermissionsByLevel(response.data.user.level)
+          };
 
+          // Atualizar tokens
+          ApiService.setAuthToken(response.data.token);
+          
+          if (response.data.refreshToken) {
+            localStorage.setItem('refresh_token', response.data.refreshToken);
+          }
+
+          localStorage.setItem('user_data', JSON.stringify(user));
+          
+          return true;
+        }
+      }
+      
+      // Token inválido ou expirado
+      SimpleCookieHelper.clearAuthCookies();
       return false;
-    } catch {
+      
+    } catch (error) {
+      console.error('❌ Erro no login automático:', error);
+      SimpleCookieHelper.clearAuthCookies();
       return false;
     }
   }

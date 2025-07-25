@@ -1,0 +1,44 @@
+/* Melhor suporte a emojis para toda a aplicação */
+@layer base {
+  .emoji-support {
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji",
+      "Twitter Color Emoji", "EmojiOne Color", "Android Emoji",
+      "Segoe UI Symbol", system-ui, -apple-system, BlinkMacSystemFont,
+      "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-variant-emoji: emoji;
+    text-rendering: optimizeLegibility;
+    -webkit-font-feature-settings: "liga" on, "clig" on, "kern" on;
+    font-feature-settings: "liga" on, "clig" on, "kern" on;
+  }
+
+  /* Força renderização de emojis em textareas */
+  textarea.emoji-support {
+    font-variant-emoji: emoji;
+    font-synthesis: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Fallback para emojis não suportados */
+  .emoji-fallback {
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji",
+      "EmojiOne Color", "Twemoji", sans-serif;
+  }
+}
+
+/* Especificamente para Windows */
+@media screen and (-ms-high-contrast: active),
+  screen and (-ms-high-contrast: none) {
+  .emoji-support {
+    font-family: "Segoe UI Emoji", "Segoe UI Symbol", "Segoe UI", Arial,
+      sans-serif;
+  }
+}
+
+/* Para dispositivos Apple */
+@supports (-webkit-appearance: none) {
+  .emoji-support {
+    font-family: "Apple Color Emoji", "SF Pro Text", -apple-system,
+      BlinkMacSystemFont, sans-serif;
+  }
+}

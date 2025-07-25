@@ -39,23 +39,23 @@ const menuItems: MenuItem[] = [
     level: 4, // Todos podem acessar
   },
   {
-    id: "users",
-    title: "Usuários",
-    icon: Users,
-    level: 2, // Admin e acima
+    id: "whatsApp",
+    title: "WhatsApp",
+    icon: FileText,
+    level: 2,
     children: [
       {
-        id: "users-list",
-        title: "Listar Usuários",
-        icon: Users,
-        href: "/admin-users",
-        level: 3,
+        id: "templates-default",
+        title: "Templates",
+        icon: FileText,
+        href: "/templates/default",
+        level: 2,
       },
       {
-        id: "users-create",
-        title: "Novo Usuário",
-        icon: Users,
-        href: "/admin-users/new",
+        id: "whatsapp-data",
+        title: "Dados",
+        icon: BarChart3,
+        href: "/whatsapp/data",
         level: 2,
       },
     ],
@@ -89,10 +89,17 @@ const menuItems: MenuItem[] = [
     level: 2,
     children: [
       {
+        id: "users",
+        title: "Usuários",
+        icon: Users,
+        level: 2, // Admin e acima
+        href: "/admin-users",
+      },
+      {
         id: "settings-general",
-        title: "Geral",
+        title: "Parâmetros",
         icon: Settings,
-        href: "/settings",
+        href: "/settings/params",
         level: 2,
       },
       {
