@@ -311,6 +311,10 @@ const TenantDetailPage = () => {
     router.push(`/tenants/${tenantId}/users`);
   };
 
+  const goToTemplates = () => {
+    router.push(`/tenants/${tenantId}/templates`);
+  };
+
   const goBack = () => {
     router.back();
   };
@@ -603,37 +607,6 @@ const TenantDetailPage = () => {
             </div>
           )}
 
-          {/* Informações do Usuário (apenas para edição) */}
-          {isEditMode && tenantUser && (
-            <div className="bg-white shadow-sm rounded-xl p-6">
-              <h3 className="text-lg font-medium text-gray-800 mb-4 flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Usuário Principal
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Input
-                  label="Nome do Usuário"
-                  value={tenantUser.name}
-                  readOnly
-                  className="bg-gray-50"
-                />
-                <Input
-                  label="Login"
-                  value={tenantUser.login}
-                  readOnly
-                  className="bg-gray-50"
-                />
-                <Input
-                  label="Senha"
-                  value={tenantUser.password}
-                  readOnly
-                  className="bg-gray-50"
-                />
-              </div>
-            </div>
-          )}
-
           {/* Botões de Ação */}
           <div className="bg-white shadow-sm rounded-xl p-6">
             <div className="flex flex-wrap gap-4">
@@ -648,7 +621,17 @@ const TenantDetailPage = () => {
                   Usuários
                 </Button>
               )}
-
+              {isEditMode && (
+                <Button
+                  type="button"
+                  onClick={goToTemplates}
+                  variant="primary"
+                  className="flex items-center gap-2"
+                >
+                  <Users className="w-4 h-4" />
+                  Templates
+                </Button>
+              )}
               <Button
                 type="submit"
                 disabled={isLoading}

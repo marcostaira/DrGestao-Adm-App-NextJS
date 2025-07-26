@@ -1,14 +1,93 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/services/tenant.service.ts - Versão Estendida
-import {
-  ExtendedTenant,
-  ExtendedTenantData,
-  Subscription,
-  SubscriptionData,
-  TenantsResponse,
-  TenantUser,
-} from "@/types/tenant.types";
 import { ApiService } from "./api.service";
+
+// Types estendidos
+export interface ExtendedTenantData {
+  client_name?: string;
+  email: string;
+  tel1?: string;
+  friendly_name: string;
+  active?: number;
+  waactive?: number;
+  // Campos estendidos do formulário
+  client_doc_cnpj?: string;
+  addr_cep?: string;
+  addr_addr?: string;
+  addr_uf?: string;
+  addr_number?: string;
+  addr_plus?: string;
+  addr_area?: string;
+  addr_city?: string;
+  free_days?: number;
+  // Campos do usuário principal (apenas para criação)
+  userName?: string;
+  userLogin?: string;
+  userPassword?: string;
+}
+
+export interface ExtendedTenant {
+  id: number;
+  date_add: string;
+  client_name: string;
+  email: string;
+  tel1: string;
+  pacientes: number;
+  usuarios: number;
+  waactive: number;
+  active: number;
+  friendly_name?: string;
+  patients_count?: number;
+  users_count?: number;
+  // Campos estendidos
+  client_doc_cnpj?: string;
+  addr_cep?: string;
+  addr_addr?: string;
+  addr_uf?: string;
+  addr_number?: string;
+  addr_plus?: string;
+  addr_area?: string;
+  addr_city?: string;
+  free_days?: number;
+}
+
+export interface TenantsResponse {
+  data: ExtendedTenant[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface TenantUser {
+  id: number;
+  name: string;
+  email: string;
+  login: string;
+  active: number;
+  level: number;
+  tenant_id: number;
+  date_add: string;
+  password?: string; // Para exibição apenas
+}
+
+export interface SubscriptionData {
+  tenant_id: number;
+  plan_id: number;
+  start_date: string;
+  end_date?: string;
+  status: "active" | "inactive" | "suspended";
+}
+
+export interface Subscription {
+  id: number;
+  tenant_id: number;
+  plan_id: number;
+  start_date: string;
+  end_date?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export class TenantService {
   /**
@@ -239,7 +318,7 @@ export class TenantService {
   }> {
     try {
       const response = await ApiService.get<TenantUser[]>(
-        `/tenants/${tenantId}/users`
+        `/tenants/users/${tenantId}`
       );
 
       if (response.success && response.data) {
@@ -460,6 +539,79 @@ export class TenantService {
       };
     } catch (error) {
       console.error("Erro ao reativar assinatura:", error);
+      return {
+        success: false,
+        message: "Erro interno do servidor",
+      };
+    }
+  }
+
+  // Adicione estes métodos ao seu src/services/tenant.service.ts
+
+  /**
+   * Buscar templates de um tenant - igual ao Angular
+   */
+  static async getTemplatesByTenant(tenantId: number): Promise<{
+    success: boolean;
+    data?: any[];
+    message?: string;
+  }> {
+    try {
+      // Usando exatamente a mesma URL do Angular: `${this.apiUrl}/${tenantId}`
+      const response = await ApiService.get<any[]>(`/templates/${tenantId}`);
+
+      if (response.success && response.data) {
+        return {
+          success: true,
+          data: response.data,
+        };
+      }
+
+      return {
+        success: false,
+        message: response.message || "Erro ao carregar templates",
+      };
+    } catch (error) {
+      console.error("Erro ao buscar templates do tenant:", error);
+      return {
+        success: false,
+        message: "Erro interno do servidor",
+      };
+    }
+  }
+
+  /**
+   * Atualizar template - igual ao Angular
+   */
+  static async updateTemplate(
+    templateId: number,
+    data: { content: string }
+  ): Promise<{
+    success: boolean;
+    data?: any;
+    message?: string;
+  }> {
+    try {
+      // Usando exatamente a mesma URL do Angular: `${this.apiUrl}/${templateId}`
+      const response = await ApiService.put<any>(
+        `/templates/${templateId}`,
+        data
+      );
+
+      if (response.success) {
+        return {
+          success: true,
+          data: response.data,
+          message: "Template atualizado com sucesso",
+        };
+      }
+
+      return {
+        success: false,
+        message: response.message || "Erro ao atualizar template",
+      };
+    } catch (error) {
+      console.error("Erro ao atualizar template:", error);
       return {
         success: false,
         message: "Erro interno do servidor",
