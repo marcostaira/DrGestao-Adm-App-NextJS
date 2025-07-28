@@ -20,8 +20,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils/cn";
 import { MenuItem, SidebarProps } from "@/types/layout.types";
-
-
+import { Logo } from "../ui/Logo";
 
 const menuItems: MenuItem[] = [
   {
@@ -224,12 +223,16 @@ export function Sidebar({ isOpen }: SidebarProps) {
       {/* Cabeçalho da sidebar */}
       <div className="p-4">
         <div className={cn("flex items-center", !isOpen && "justify-center")}>
-          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Shield className="h-5 w-5 text-white" />
+          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+            <Logo
+              size="lg"
+              showText={false}
+              className="justify-center h-8 w-8 text-white"
+            />
           </div>
           {isOpen && (
             <div className="ml-3">
-              <h2 className="text-sm font-semibold text-white">Painel</h2>
+              <h2 className="text-s font-semibold text-white">Painel</h2>
               <p className="text-xs text-white/70">Sistema DrGestão</p>
             </div>
           )}

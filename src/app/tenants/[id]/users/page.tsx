@@ -132,6 +132,7 @@ const TenantUsersListPage = () => {
 
       const updatedUserData = {
         ...user,
+        owner: tenantId,
         active: newStatus,
         date_update: new Date().toISOString(),
         ip_update: "127.0.0.1", // Mock IP - você pode implementar pegar IP real
