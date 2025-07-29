@@ -63,7 +63,7 @@ const menuItems: MenuItem[] = [
         title: "Templates",
         icon: FileText,
         href: "/templates/default",
-        level: 2,
+        level: 1,
       },
       {
         id: "whatsapp-data",
@@ -100,13 +100,13 @@ const menuItems: MenuItem[] = [
     id: "settings",
     title: "Configurações",
     icon: Settings,
-    level: 2,
+    level: 1,
     children: [
       {
         id: "users",
         title: "Usuários",
         icon: Users,
-        level: 2, // Admin e acima
+        level: 1, // Admin e acima
         href: "/admin-users",
       },
       {
@@ -114,7 +114,7 @@ const menuItems: MenuItem[] = [
         title: "Parâmetros",
         icon: Settings,
         href: "/settings/params",
-        level: 2,
+        level: 1,
       },
       {
         id: "settings-security",
