@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Users, MessageCircle, Plus, Search, Loader2 } from "lucide-react";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -22,93 +22,119 @@ const TenantsListPage = () => {
   const [allLoaded, setAllLoaded] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Tenants filtrados por busca
+  // Tenants filtrados por busca (aplicado no frontend após carregar do backend)
   const filteredTenants = useMemo(() => {
-    if (!searchTerm) return tenants;
+    if (!searchTerm.trim()) return tenants;
 
     const term = searchTerm.toLowerCase();
     return tenants.filter(
       (tenant) =>
         (tenant.client_name || "").toLowerCase().includes(term) ||
-        (tenant.email || "").toLowerCase().includes(term)
+        (tenant.email || "").toLowerCase().includes(term) ||
+        (tenant.tel1 || "").toLowerCase().includes(term)
     );
   }, [tenants, searchTerm]);
 
   // Carrega os tenants
-  const loadTenants = async (reset: boolean = false) => {
-    if (loading) return;
+  const loadTenants = useCallback(
+    async (reset: boolean = false) => {
+      if (loading) return;
 
-    setLoading(true);
-    setError(null);
+      setLoading(true);
+      setError(null);
 
-    if (reset) {
-      setPage(1);
-      setTenants([]);
-    }
+      try {
+        const currentPage = reset ? 1 : page;
+        const response = await TenantService.getTenants(
+          currentPage,
+          pageSize,
+          statusFilter
+        );
 
-    try {
-      const currentPage = reset ? 1 : page;
-      const response = await TenantService.getTenants(
-        currentPage,
-        pageSize,
-        statusFilter
-      );
+        if (response.success && response.data) {
+          const mapped: Tenant[] = (response.data.data || []).map((t: any) => ({
+            id: t.id,
+            date_add: t.date_add,
+            client_name: t.client_name || t.friendly_name,
+            email: t.email,
+            tel1: t.tel1,
+            pacientes: t.patients_count || 0,
+            usuarios: t.users_count || 0,
+            waactive: t.waactive || 0,
+            active: t.active || 0,
+          }));
 
-      if (response.success && response.data) {
-        const mapped: Tenant[] = (response.data.data || []).map((t: any) => ({
-          id: t.id,
-          date_add: t.date_add,
-          client_name: t.client_name || t.friendly_name,
-          email: t.email,
-          tel1: t.tel1,
-          pacientes: t.patients_count || 0,
-          usuarios: t.users_count || 0,
-          waactive: t.waactive || 0,
-          active: t.active || 0,
-        }));
+          if (reset) {
+            setTenants(mapped);
+            setPage(1);
+          } else {
+            setTenants((prev) => [...prev, ...mapped]);
+          }
 
-        if (reset) {
-          setTenants(mapped);
+          setTotalTenants(response.data.total || mapped.length);
+
+          // Verifica se carregou todos os registros
+          const newTotal = reset
+            ? mapped.length
+            : tenants.length + mapped.length;
+          if (newTotal >= response.data.total || mapped.length < pageSize) {
+            setAllLoaded(true);
+          }
         } else {
-          setTenants((prev) => [...prev, ...mapped]);
+          setError(response.message || "Erro ao carregar tenants");
         }
-
-        setTotalTenants(response.data.total || mapped.length);
-
-        const newTotal = reset ? mapped.length : tenants.length + mapped.length;
-        if (newTotal >= response.data.total) {
-          setAllLoaded(true);
-        }
-      } else {
-        setError(response.message || "Erro ao carregar tenants");
+      } catch (err) {
+        setError("Erro interno do servidor");
+        console.error("Erro ao carregar tenants:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError("Erro interno do servidor");
-      console.error("Erro ao carregar tenants:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [loading, page, pageSize, statusFilter, tenants.length]
+  );
 
-  // Efeito inicial
+  // Efeito para carregar dados quando statusFilter muda
   useEffect(() => {
-    loadTenants();
+    setTenants([]);
+    setPage(1);
+    setAllLoaded(false);
+    loadTenants(true);
+  }, [statusFilter]);
+
+  // Carregamento inicial
+  useEffect(() => {
+    loadTenants(true);
   }, []);
 
-  // Carrega mais tenants
-  const loadMoreTenants = () => {
-    if (loading || allLoaded) return;
-    setPage((prev) => prev + 1);
-    loadTenants();
-  };
+  // Scroll infinito
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop >=
+          document.documentElement.offsetHeight - 1000 && // Carrega quando faltam 1000px para o fim
+        !loading &&
+        !allLoaded &&
+        filteredTenants.length > 0
+      ) {
+        setPage((prev) => prev + 1);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [loading, allLoaded, filteredTenants.length]);
+
+  // Carregar mais quando page muda
+  useEffect(() => {
+    if (page > 1) {
+      loadTenants();
+    }
+  }, [page]);
 
   // Filtra por status
   const filterByStatus = (status: number | null) => {
     setStatusFilter(status);
-    setAllLoaded(false);
-    setTenants([]);
-    setPage(1);
-    loadTenants(true);
+    // O useEffect acima irá detectar a mudança e recarregar
   };
 
   // Aplica filtro de busca
@@ -222,29 +248,58 @@ const TenantsListPage = () => {
               Novo Cliente
             </button>
 
-            <div className="relative w-full md:w-1/3">
+            {/* Campo de busca */}
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
+                placeholder="Buscar por nome, email ou telefone..."
+                value={searchTerm}
                 onChange={applyFilter}
-                placeholder="Buscar cliente ou e-mail..."
-                className="border border-gray-300 rounded-lg px-10 py-2 w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-[#008089]"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#008089] focus:border-transparent w-80"
               />
             </div>
           </div>
-        </div>
 
-        {/* Filtros de Status */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {statusButtons.map(({ label, value, color }) => (
-            <button
-              key={label}
-              onClick={() => filterByStatus(value)}
-              className={getButtonClass(value, color)}
-            >
-              {label}
-            </button>
-          ))}
+          {/* Filtros de Status */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {statusButtons.map((button) => (
+              <button
+                key={button.label}
+                onClick={() => filterByStatus(button.value)}
+                className={getButtonClass(button.value, button.color)}
+              >
+                {button.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Contador de resultados */}
+          <div className="mt-4 text-sm text-gray-600">
+            {searchTerm ? (
+              <span>
+                Mostrando {filteredTenants.length} de {tenants.length} clientes
+                {statusFilter !== null && (
+                  <span className="ml-2">
+                    (filtro:{" "}
+                    {statusButtons.find((b) => b.value === statusFilter)?.label}
+                    )
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span>
+                {tenants.length} de {totalTenants} clientes carregados
+                {statusFilter !== null && (
+                  <span className="ml-2">
+                    (filtro:{" "}
+                    {statusButtons.find((b) => b.value === statusFilter)?.label}
+                    )
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Mensagem de erro */}
@@ -254,38 +309,26 @@ const TenantsListPage = () => {
           </div>
         )}
 
-        {/* Tabela */}
+        {/* Tabela de Tenants */}
         <div className="bg-white shadow-sm rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Data
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Cliente
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
+                    Contato
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Telefone
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Pacientes
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Usuários
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    WhatsApp
+                    Estatísticas
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    WhatsApp
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ações
@@ -297,37 +340,25 @@ const TenantsListPage = () => {
                   <tr
                     key={tenant.id}
                     onClick={() => goToTenant(tenant.id)}
-                    className="hover:bg-gray-50 cursor-pointer"
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {tenant.id}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(tenant.date_add).toLocaleDateString("pt-BR")}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {tenant.client_name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {tenant.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {tenant.tel1}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {tenant.pacientes}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {tenant.usuarios}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {tenant.client_name || "Sem nome"}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        ID: {tenant.id}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getWaStatusClass(
-                          tenant.waactive
-                        )}`}
-                      >
-                        {getWaStatusLabel(tenant.waactive)}
-                      </span>
+                      <div className="text-sm text-gray-900">
+                        {tenant.email}
+                      </div>
+                      <div className="text-sm text-gray-500">{tenant.tel1}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div>Pacientes: {tenant.pacientes}</div>
+                      <div>Usuários: {tenant.usuarios}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
@@ -336,6 +367,15 @@ const TenantsListPage = () => {
                         )}`}
                       >
                         {getStatusLabel(tenant.active)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getWaStatusClass(
+                          tenant.waactive
+                        )}`}
+                      >
+                        {getWaStatusLabel(tenant.waactive)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -369,29 +409,36 @@ const TenantsListPage = () => {
           {loading && (
             <div className="flex justify-center p-4">
               <Loader2 className="w-8 h-8 animate-spin text-[#008089]" />
+              <span className="ml-2 text-gray-600">
+                Carregando mais clientes...
+              </span>
             </div>
           )}
 
-          {/* Load more button */}
-          {!loading && !allLoaded && filteredTenants.length > 0 && (
-            <div className="flex justify-center p-4">
-              <button
-                onClick={loadMoreTenants}
-                className="bg-[#008089] text-white px-4 py-2 rounded-lg hover:bg-[#006b73] transition"
-              >
-                Carregar Mais
-              </button>
+          {/* Indicador de fim dos dados */}
+          {!loading && allLoaded && tenants.length > 0 && (
+            <div className="text-center p-4 text-gray-500 text-sm">
+              Todos os clientes foram carregados
             </div>
           )}
 
           {/* Empty state */}
-          {!loading && filteredTenants.length === 0 && (
+          {!loading && filteredTenants.length === 0 && tenants.length === 0 && (
             <div className="text-center p-8 text-gray-500">
-              {searchTerm
-                ? "Nenhum cliente encontrado com os critérios de busca."
-                : "Nenhum cliente encontrado."}
+              Nenhum cliente encontrado.
             </div>
           )}
+
+          {/* Empty state para busca */}
+          {!loading &&
+            filteredTenants.length === 0 &&
+            tenants.length > 0 &&
+            searchTerm && (
+              <div className="text-center p-8 text-gray-500">
+                Nenhum cliente encontrado com os critérios de busca &quot;
+                {searchTerm}&ldquo;.
+              </div>
+            )}
         </div>
       </div>
     </ProtectedRoute>
